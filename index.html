@@ -252,8 +252,8 @@
                     <div class="w-16 h-16 rounded-full bg-pink-400/10 flex items-center justify-center mb-4 text-pink-300 border border-pink-400/20">
                         <i data-lucide="microscope" class="w-8 h-8"></i>
                     </div>
-                    <h3 class="text-lg font-bold text-white mb-1">등록된 작품이 없습니다</h3>
-                    <p class="text-purple-200/60 text-sm max-w-sm mb-6">검색어와 부합하는 작품이 없거나 아직 출품된 사진이 없습니다.</p>
+                    <h3 class="text-lg font-bold text-white mb-1">등록된 관찰 작품이 없습니다</h3>
+                    <p class="text-purple-200/60 text-sm max-w-sm mb-6">첫 번째 현미경 관찰 사진을 등록하여 몽환적인 미시세포 전시를 시작해 보세요!</p>
                     <button onclick="openUploadModal()" class="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-pink-400 to-purple-400 text-white text-sm font-semibold shadow-md shadow-pink-500/20 hover:opacity-90 transition-all">
                         첫 작품 출품하기
                     </button>
@@ -307,7 +307,12 @@
                 <div class="border-b border-white/10 pb-4 mb-4">
                     <div class="flex items-center justify-between text-xs text-purple-200/70 mb-1.5">
                         <span id="modalAuthor" class="font-medium text-pink-200">작성자: 김설월</span>
-                        <span id="modalDate">2026.11.10</span>
+                        <div class="flex items-center space-x-2">
+                            <span id="modalDate">2026.11.10</span>
+                            <button onclick="deleteCurrentPost()" title="게시글 삭제" class="text-rose-400/80 hover:text-rose-300 transition-colors ml-1 p-1 rounded-lg hover:bg-rose-500/10">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
                     </div>
                     <h3 id="modalTitle" class="text-xl font-bold text-white mb-2">양파 표피세포 관찰</h3>
                     <p id="modalDesc" class="text-sm text-purple-100/80 leading-relaxed font-light max-h-24 overflow-y-auto pr-1">
@@ -376,12 +381,20 @@
                     <input type="text" id="upTitle" required placeholder="예: 나비 날개 비늘의 결정" class="w-full glass-input px-3.5 py-2.5 rounded-2xl text-sm">
                 </div>
 
-                <!-- Author & Magnification -->
+                <!-- Author & Password -->
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-semibold text-purple-200 mb-1">출품자 이름 *</label>
                         <input type="text" id="upAuthor" required placeholder="2학년 1반 김과학" class="w-full glass-input px-3.5 py-2.5 rounded-2xl text-sm">
                     </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-purple-200 mb-1">삭제 비밀번호 *</label>
+                        <input type="password" id="upPassword" required placeholder="비밀번호 4자리" class="w-full glass-input px-3.5 py-2.5 rounded-2xl text-sm">
+                    </div>
+                </div>
+
+                <!-- Magnification & Category -->
+                <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-semibold text-purple-200 mb-1">현미경 배율 *</label>
                         <select id="upMagnification" class="w-full glass-input px-3.5 py-2.5 rounded-2xl text-sm bg-slate-900 text-white">
@@ -392,16 +405,14 @@
                             <option value="전자현미경">SEM (전자현미경)</option>
                         </select>
                     </div>
-                </div>
-
-                <!-- Category -->
-                <div>
-                    <label class="block text-xs font-semibold text-purple-200 mb-1">관찰 분야 *</label>
-                    <select id="upCategory" class="w-full glass-input px-3.5 py-2.5 rounded-2xl text-sm bg-slate-900 text-white">
-                        <option value="생물">🌸 생물 (동식물/세포/미생물)</option>
-                        <option value="화학/결정">💎 화학 (소금/설탕/결정/반응)</option>
-                        <option value="일상/물체">🔬 일상속 순간 (섬유/지면/금속 등)</option>
-                    </select>
+                    <div>
+                        <label class="block text-xs font-semibold text-purple-200 mb-1">관찰 분야 *</label>
+                        <select id="upCategory" class="w-full glass-input px-3.5 py-2.5 rounded-2xl text-sm bg-slate-900 text-white">
+                            <option value="생물">🌸 생물 (동식물/세포/미생물)</option>
+                            <option value="화학/결정">💎 화학 (소금/설탕/결정/반응)</option>
+                            <option value="일상/물체">🔬 일상속 순간 (섬유/지면/금속 등)</option>
+                        </select>
+                    </div>
                 </div>
 
                 <!-- Image Selection -->
@@ -443,81 +454,40 @@
         </div>
     </div>
 
+    <!-- MODAL 3: CUSTOM PROMPT/DELETE MODAL (No alert/confirm) -->
+    <div id="deleteConfirmModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md opacity-0 pointer-events-none transition-all duration-300">
+        <div class="w-full max-w-sm glass-panel p-6 rounded-3xl border border-white/20 text-center space-y-4">
+            <div class="w-12 h-12 rounded-full bg-rose-500/20 text-rose-300 flex items-center justify-center mx-auto border border-rose-400/30">
+                <i data-lucide="shield-alert" class="w-6 h-6"></i>
+            </div>
+            <h4 class="text-base font-bold text-white" id="deleteModalTitle">작품 삭제 확인</h4>
+            <p class="text-xs text-purple-200/70" id="deleteModalSub">작성 시 입력한 비밀번호를 입력해 주세요.</p>
+            <input type="password" id="deletePasswordInput" placeholder="비밀번호 입력" class="w-full glass-input px-3.5 py-2.5 rounded-2xl text-sm text-center">
+            <div id="deleteErrorMessage" class="text-xs text-rose-400 hidden">비밀번호가 일치하지 않습니다.</div>
+            <div class="flex gap-2">
+                <button onclick="closeDeleteConfirmModal()" class="w-1/2 py-2.5 rounded-2xl bg-white/10 text-xs font-semibold text-purple-200 hover:bg-white/15 border border-white/10 transition-all">취소</button>
+                <button id="confirmDeleteBtn" onclick="executeDelete()" class="w-1/2 py-2.5 rounded-2xl bg-rose-500/80 hover:bg-rose-500 text-xs font-semibold text-white shadow-md transition-all">삭제하기</button>
+            </div>
+        </div>
+    </div>
+
     <!-- JAVASCRIPT LOGIC -->
     <script>
-        // Initial Mock Data with soft pastel & microscopic themes
-        const INITIAL_POSTS = [
-            {
-                id: '1',
-                title: '식물 표피세포와 엽록체의 몽환적 빛',
-                author: '2학년 3반 강세란',
-                category: '생물',
-                magnification: '400x',
-                imageUrl: 'https://images.unsplash.com/photo-1576086213369-97a306d36557?auto=format&fit=crop&w=800&q=80',
-                description: '학교 과학실 광학현미경으로 관찰한 잎의 표피세포입니다. 아세트산카민 용액에 은은히 물든 핵과 빛을 반사하는 엽록체가 너무 아름다웠습니다.',
-                date: '2026.11.08',
-                likes: 38,
-                likedByMe: false,
-                comments: [
-                    { id: 'c1', author: '1학년 2반 박수민', text: '빛을 받으니 정말 유리 세공품 같아요! 파스텔 느낌 너무 이쁩니다 ✨', date: '11.08 14:20' },
-                    { id: 'c2', author: '생물선생님', text: '기공의 구조가 뚜렷하고 조명 조절이 완벽하네요. 멋진 사진입니다!', date: '11.08 16:45' }
-                ]
-            },
-            {
-                id: '2',
-                title: '비타민 C 재결정의 빛 부서짐',
-                author: '3학년 1반 정유진',
-                category: '화학/결정',
-                magnification: '200x',
-                imageUrl: 'https://images.unsplash.com/photo-1530026405186-ed1f139313f8?auto=format&fit=crop&w=800&q=80',
-                description: '수용액 상태의 비타민 C를 건조시켜 얻은 결정 구조입니다. 편광 렌즈 필터 아래에서 파스텔 핑크와 블루로 번져나가는 빛이 인상적입니다.',
-                date: '2026.11.09',
-                likes: 54,
-                likedByMe: true,
-                comments: [
-                    { id: 'c3', author: '2학년 5반 최연우', text: '마치 미니 우주나 오로라를 보는 것 같아요 🌌', date: '11.09 10:15' }
-                ]
-            },
-            {
-                id: '3',
-                title: '부직포 섬유의 미세한 얽힘',
-                author: '1학년 4반 한지민',
-                category: '일상/물체',
-                magnification: '1000x',
-                imageUrl: 'https://images.unsplash.com/photo-1518152006812-edab29b069ac?auto=format&fit=crop&w=800&q=80',
-                description: '마스크 미세 필터를 디지털 현미경으로 크게 확대해 관찰했습니다. 실크실처럼 투명하고 부드럽게 얽혀 있는 모습이 신기합니다.',
-                date: '2026.11.10',
-                likes: 29,
-                likedByMe: false,
-                comments: []
-            },
-            {
-                id: '4',
-                title: '연못 미생물 플랑크톤의 기하학',
-                author: '2학년 2반 윤서아',
-                category: '생물',
-                magnification: '400x',
-                imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80',
-                description: '작은 물방울 속에 숨어 있는 미생물의 외각 껍질입니다. 투명하고 정교한 기하학 패턴이 대자연의 미학을 보여줍니다.',
-                date: '2026.11.10',
-                likes: 41,
-                likedByMe: false,
-                comments: [
-                    { id: 'c4', author: '3학년 4반 김나연', text: '보석 조각 같이 빛나요! 잘 감상하고 갑니다.', date: '11.10 12:00' }
-                ]
-            }
-        ];
+        // Start with Empty Array for initial state as requested
+        const INITIAL_POSTS = [];
 
         // Global State Variables
         let posts = [];
         let currentFilter = 'all';
         let searchQuery = '';
         let activePostId = null;
+        let deleteTargetType = null; // 'post' or 'comment'
+        let deleteTargetId = null;
         let selectedUploadImage = 'https://images.unsplash.com/photo-1576086213369-97a306d36557?auto=format&fit=crop&w=800&q=80';
 
-        // Initialize App
+        // Initialize App & Load Saved Posts
         window.addEventListener('DOMContentLoaded', () => {
-            const saved = localStorage.getItem('seolwol_pastel_microscope_posts');
+            const saved = localStorage.getItem('seolwol_microscope_posts_v2');
             if (saved) {
                 try {
                     posts = JSON.parse(saved);
@@ -533,9 +503,9 @@
             lucide.createIcons();
         });
 
-        // Save state to Local Storage
+        // Save state to Local Storage permanently
         function savePosts() {
-            localStorage.setItem('seolwol_pastel_microscope_posts', JSON.stringify(posts));
+            localStorage.setItem('seolwol_microscope_posts_v2', JSON.stringify(posts));
             updateStats();
         }
 
@@ -605,7 +575,7 @@
                                 </button>
                                 <span class="flex items-center space-x-1.5">
                                     <i data-lucide="message-square" class="w-4 h-4"></i>
-                                    <span>${post.comments.length}</span>
+                                    <span>${post.comments ? post.comments.length : 0}</span>
                                 </span>
                             </div>
                             <span class="text-[11px] text-pink-300/80 group-hover:translate-x-1 transition-transform flex items-center gap-0.5 font-medium">
@@ -722,26 +692,32 @@
         // Render Comments in Modal
         function renderComments(post) {
             const list = document.getElementById('modalCommentsList');
-            document.getElementById('modalCommentCount').innerText = post.comments.length;
+            document.getElementById('modalCommentCount').innerText = post.comments ? post.comments.length : 0;
             list.innerHTML = '';
 
-            if (post.comments.length === 0) {
+            if (!post.comments || post.comments.length === 0) {
                 list.innerHTML = `<div class="text-center py-6 text-purple-300/40 text-xs">따뜻한 첫 감상평을 남겨보세요 ✨</div>`;
                 return;
             }
 
             post.comments.forEach(c => {
                 const item = document.createElement('div');
-                item.className = 'bg-white/5 rounded-2xl p-3 border border-white/10 text-xs backdrop-blur-md';
+                item.className = 'bg-white/5 rounded-2xl p-3 border border-white/10 text-xs backdrop-blur-md relative group';
                 item.innerHTML = `
                     <div class="flex items-center justify-between font-semibold text-pink-200 mb-1">
                         <span>${c.author}</span>
-                        <span class="text-[10px] text-purple-300/50 font-normal">${c.date}</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] text-purple-300/50 font-normal">${c.date}</span>
+                            <button onclick="deleteComment('${c.id}')" title="댓글 삭제" class="text-purple-300/40 hover:text-rose-300 transition-colors">
+                                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
                     </div>
                     <p class="text-purple-100/80 font-light leading-relaxed">${c.text}</p>
                 `;
                 list.appendChild(item);
             });
+            lucide.createIcons();
         }
 
         // Submit Comment
@@ -754,6 +730,8 @@
 
             const post = posts.find(p => p.id === activePostId);
             if (!post) return;
+
+            if (!post.comments) post.comments = [];
 
             const newComment = {
                 id: 'c_' + Date.now(),
@@ -768,6 +746,71 @@
             renderGallery();
 
             textInput.value = '';
+        }
+
+        // Delete Logic handling (Post & Comment)
+        function deleteCurrentPost() {
+            if (!activePostId) return;
+            deleteTargetType = 'post';
+            deleteTargetId = activePostId;
+
+            document.getElementById('deleteModalTitle').innerText = '작품 삭제 확인';
+            document.getElementById('deleteModalSub').innerText = '출품할 때 설정한 비밀번호를 입력하세요.';
+            document.getElementById('deletePasswordInput').value = '';
+            document.getElementById('deleteErrorMessage').classList.add('hidden');
+
+            openDeleteConfirmModal();
+        }
+
+        function deleteComment(commentId) {
+            deleteTargetType = 'comment';
+            deleteTargetId = commentId;
+
+            document.getElementById('deleteModalTitle').innerText = '댓글 삭제';
+            document.getElementById('deleteModalSub').innerText = '작품 삭제 비밀번호 4자리를 입력해주세요.';
+            document.getElementById('deletePasswordInput').value = '';
+            document.getElementById('deleteErrorMessage').classList.add('hidden');
+
+            openDeleteConfirmModal();
+        }
+
+        function openDeleteConfirmModal() {
+            const modal = document.getElementById('deleteConfirmModal');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modal.classList.add('opacity-100');
+        }
+
+        function closeDeleteConfirmModal() {
+            const modal = document.getElementById('deleteConfirmModal');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            modal.classList.remove('opacity-100');
+        }
+
+        function executeDelete() {
+            const inputPw = document.getElementById('deletePasswordInput').value;
+            const post = posts.find(p => p.id === activePostId);
+
+            if (!post) return;
+
+            // Simple verification check
+            if (post.password && post.password !== inputPw) {
+                document.getElementById('deleteErrorMessage').classList.remove('hidden');
+                return;
+            }
+
+            if (deleteTargetType === 'post') {
+                posts = posts.filter(p => p.id !== activePostId);
+                savePosts();
+                closeDeleteConfirmModal();
+                closeDetailModal();
+                renderGallery();
+            } else if (deleteTargetType === 'comment') {
+                post.comments = post.comments.filter(c => c.id !== deleteTargetId);
+                savePosts();
+                closeDeleteConfirmModal();
+                renderComments(post);
+                renderGallery();
+            }
         }
 
         // Upload Modal Functions
@@ -811,6 +854,7 @@
 
             const title = document.getElementById('upTitle').value;
             const author = document.getElementById('upAuthor').value;
+            const password = document.getElementById('upPassword').value;
             const magnification = document.getElementById('upMagnification').value;
             const category = document.getElementById('upCategory').value;
             const description = document.getElementById('upDesc').value;
@@ -819,6 +863,7 @@
                 id: 'post_' + Date.now(),
                 title,
                 author,
+                password,
                 category,
                 magnification,
                 imageUrl: selectedUploadImage,
