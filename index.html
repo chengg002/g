@@ -948,11 +948,40 @@
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    selectedUploadImage = e.target.result;
-                    const container = document.getElementById('imagePreviewContainer');
-                    const preview = document.getElementById('imagePreview');
-                    preview.src = selectedUploadImage;
-                    container.classList.remove('hidden');
+                    const img = new Image();
+                    img.onload = function() {
+                        // Compress & Resize Image to prevent payload size limits
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 1000;
+                        const MAX_HEIGHT = 1000;
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > height) {
+                            if (width > MAX_WIDTH) {
+                                height *= MAX_WIDTH / width;
+                                width = MAX_WIDTH;
+                            }
+                        } else {
+                            if (height > MAX_HEIGHT) {
+                                width *= MAX_HEIGHT / height;
+                                height = MAX_HEIGHT;
+                            }
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        // Compress to JPEG format with 0.75 quality
+                        selectedUploadImage = canvas.toDataURL('image/jpeg', 0.75);
+                        const container = document.getElementById('imagePreviewContainer');
+                        const preview = document.getElementById('imagePreview');
+                        preview.src = selectedUploadImage;
+                        container.classList.remove('hidden');
+                    };
+                    img.src = e.target.result;
                 }
                 reader.readAsDataURL(file);
             }
@@ -961,36 +990,51 @@
         async function handleUploadSubmit(e) {
             e.preventDefault();
 
-            const title = document.getElementById('upTitle').value;
-            const author = document.getElementById('upAuthor').value;
-            const password = document.getElementById('upPassword').value;
-            const magnification = document.getElementById('upMagnification').value;
-            const category = document.getElementById('upCategory').value;
-            const description = document.getElementById('upDesc').value;
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerText;
+            submitBtn.disabled = true;
+            submitBtn.innerText = '작품 등록 중...';
 
-            const newPost = {
-                id: 'post_' + Date.now(),
-                title,
-                author,
-                password,
-                category,
-                magnification,
-                imageUrl: selectedUploadImage,
-                description,
-                date: new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }),
-                createdAt: Date.now(),
-                likes: 0,
-                likedByMe: false,
-                comments: []
-            };
+            try {
+                const title = document.getElementById('upTitle').value;
+                const author = document.getElementById('upAuthor').value;
+                const password = document.getElementById('upPassword').value;
+                const magnification = document.getElementById('upMagnification').value;
+                const category = document.getElementById('upCategory').value;
+                const description = document.getElementById('upDesc').value;
 
-            if (window.saveNewPostToCloud) {
-                await window.saveNewPostToCloud(newPost);
+                const newPost = {
+                    id: 'post_' + Date.now(),
+                    title,
+                    author,
+                    password,
+                    category,
+                    magnification,
+                    imageUrl: selectedUploadImage,
+                    description,
+                    date: new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }),
+                    createdAt: Date.now(),
+                    likes: 0,
+                    likedByMe: false,
+                    comments: []
+                };
+
+                if (window.saveNewPostToCloud) {
+                    const success = await window.saveNewPostToCloud(newPost);
+                    if (!success) {
+                        alert('작품 등록에 실패했습니다. 사진 파일 크기를 확인해 주세요.');
+                    }
+                }
+
+                closeUploadModal();
+                e.target.reset();
+                document.getElementById('imagePreviewContainer').classList.add('hidden');
+            } catch (err) {
+                console.error("Upload Error:", err);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = originalBtnText;
             }
-
-            closeUploadModal();
-            e.target.reset();
-            document.getElementById('imagePreviewContainer').classList.add('hidden');
         }
     </script>
 </body>
