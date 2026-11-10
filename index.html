@@ -304,13 +304,14 @@
             <div class="lg:w-5/12 flex flex-col h-full max-h-[50vh] lg:max-h-[90vh] p-6 overflow-hidden border-t lg:border-t-0 lg:border-l border-white/15 bg-slate-900/40">
                 
                 <!-- Author & Title info -->
-                <div class="border-b border-white/10 pb-4 mb-4">
+                <div class="border-b border-white/10 pb-4 mb-4 pr-6">
                     <div class="flex items-center justify-between text-xs text-purple-200/70 mb-1.5">
                         <span id="modalAuthor" class="font-medium text-pink-200">작성자: 김설월</span>
                         <div class="flex items-center space-x-2">
                             <span id="modalDate">2026.11.10</span>
-                            <button onclick="deleteCurrentPost()" title="게시글 삭제" class="text-rose-400/80 hover:text-rose-300 transition-colors ml-1 p-1 rounded-lg hover:bg-rose-500/10">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            <button onclick="deleteCurrentPost()" title="게시글 삭제" class="flex items-center gap-1 text-rose-400 hover:text-rose-200 transition-colors ml-1 px-2 py-0.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/30 border border-rose-400/30 font-medium">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                <span>삭제</span>
                             </button>
                         </div>
                     </div>
