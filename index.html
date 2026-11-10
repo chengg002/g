@@ -75,6 +75,9 @@
                 // Sort by creation date (newest first)
                 fetchedPosts.sort((a, b) => b.createdAt - a.createdAt);
                 
+                // Backup to LocalStorage for instant fallback
+                localStorage.setItem('seolwol_microscope_posts', JSON.stringify(fetchedPosts));
+                
                 window.posts = fetchedPosts;
                 window.renderGallery();
                 window.updateStats();
@@ -95,19 +98,32 @@
 
         // Global Sync Functions linked to Firestore
         window.saveNewPostToCloud = async (newPost) => {
-            if (!db || !currentUser) return false;
+            // Save to Local memory first for immediate UX response
+            window.posts.unshift(newPost);
+            localStorage.setItem('seolwol_microscope_posts', JSON.stringify(window.posts));
+            window.renderGallery();
+            window.updateStats();
+
+            if (!db || !currentUser) return true;
             try {
                 const docRef = doc(getPostsCollectionRef(), newPost.id);
                 await setDoc(docRef, newPost);
                 return true;
             } catch (err) {
-                console.error("Failed to add post:", err);
+                console.error("Failed to add post to Cloud DB:", err);
                 return false;
             }
         };
 
         window.updatePostInCloud = async (postId, updateData) => {
-            if (!db || !currentUser) return false;
+            // Local memory update
+            const p = window.posts.find(item => item.id === postId);
+            if (p) {
+                Object.assign(p, updateData);
+                localStorage.setItem('seolwol_microscope_posts', JSON.stringify(window.posts));
+            }
+
+            if (!db || !currentUser) return true;
             try {
                 const docRef = doc(getPostsCollectionRef(), postId);
                 await updateDoc(docRef, updateData);
@@ -119,7 +135,12 @@
         };
 
         window.deletePostFromCloud = async (postId) => {
-            if (!db || !currentUser) return false;
+            window.posts = window.posts.filter(item => item.id !== postId);
+            localStorage.setItem('seolwol_microscope_posts', JSON.stringify(window.posts));
+            window.renderGallery();
+            window.updateStats();
+
+            if (!db || !currentUser) return true;
             try {
                 const docRef = doc(getPostsCollectionRef(), postId);
                 await deleteDoc(docRef);
@@ -592,8 +613,9 @@
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
-        // Global State Variables
-        window.posts = [];
+        // Global State Variables - Load local cache if available on start
+        const cachedPosts = localStorage.getItem('seolwol_microscope_posts');
+        window.posts = cachedPosts ? JSON.parse(cachedPosts) : [];
         let currentFilter = 'all';
         let searchQuery = '';
         window.activePostId = null;
@@ -950,10 +972,10 @@
                 reader.onload = function(e) {
                     const img = new Image();
                     img.onload = function() {
-                        // Compress & Resize Image to prevent payload size limits
+                        // Advanced Resize & Compression logic (Max 800px, 55% JPEG Quality)
                         const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 1000;
-                        const MAX_HEIGHT = 1000;
+                        const MAX_WIDTH = 800;
+                        const MAX_HEIGHT = 800;
                         let width = img.width;
                         let height = img.height;
 
@@ -972,10 +994,15 @@
                         canvas.width = width;
                         canvas.height = height;
                         const ctx = canvas.getContext('2d');
+                        
+                        // Fill smooth background for transparent PNGs
+                        ctx.fillStyle = '#0c0a1d';
+                        ctx.fillRect(0, 0, width, height);
+                        
                         ctx.drawImage(img, 0, 0, width, height);
 
-                        // Compress to JPEG format with 0.75 quality
-                        selectedUploadImage = canvas.toDataURL('image/jpeg', 0.75);
+                        // Compress to efficient JPEG format (0.55 quality ~100KB)
+                        selectedUploadImage = canvas.toDataURL('image/jpeg', 0.55);
                         const container = document.getElementById('imagePreviewContainer');
                         const preview = document.getElementById('imagePreview');
                         preview.src = selectedUploadImage;
@@ -993,7 +1020,7 @@
             const submitBtn = e.target.querySelector('button[type="submit"]');
             const originalBtnText = submitBtn.innerText;
             submitBtn.disabled = true;
-            submitBtn.innerText = '작품 등록 중...';
+            submitBtn.innerText = '작품 압축 및 등록 중...';
 
             try {
                 const title = document.getElementById('upTitle').value;
@@ -1020,10 +1047,7 @@
                 };
 
                 if (window.saveNewPostToCloud) {
-                    const success = await window.saveNewPostToCloud(newPost);
-                    if (!success) {
-                        alert('작품 등록에 실패했습니다. 사진 파일 크기를 확인해 주세요.');
-                    }
+                    await window.saveNewPostToCloud(newPost);
                 }
 
                 closeUploadModal();
